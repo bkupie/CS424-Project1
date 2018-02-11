@@ -22,8 +22,7 @@ pumpLocations <- read.table(file = "data/choleraPumpLocations.csv", header = FAL
 
 #add totals for the census data
 census$Total = census$female + census$male
-#get the well icon as an image
-well = makeIcon("well.png", 20,20)
+
 
 #make sure death information is filled completly and correctl
 complete.cases(deaths) 
@@ -50,7 +49,7 @@ pumpLocations$type = "well"
 colnames(deathLocations) <- c("deaths", "longitude","latitude","type" )
 colnames(pumpLocations) <- c("deaths", "longitude","latitude","type" )
 
-joined <- merge(deathLocations,pumpLocations, by = "deaths", all = TRUE)
+joined <- rbind(deathLocations,pumpLocations)
 
 # start up the gui 
 ui <- dashboardPage(
@@ -287,26 +286,16 @@ server <- function(input, output) {
   # add a leaflet map and put markers where the deaths occured
 
   output$map <- renderLeaflet({
-
-    pumpIcon <- awesomeIcons(
-      icon = 'ios-close',
-      iconColor = 'black',
-      library = 'ion',
-      markerColor = "blue"
-    )
+    pal <- colorFactor(c("red","blue"), domain = c("well","death"))
     
-    pal <- colorFactor(c("green","red"), domain = c("well","death"))
-    
-    #m <-leaflet(deathLocations) %>% addTiles() %>% addMarkers(clusterOptions = markerClusterOptions(),popup = deathLocations$deaths) 
-    
-    #leaflet(pumpLocations) %>% addMarkers(icon = well)
-    m <-leaflet(pumpLocations) %>% addTiles() %>% addCircleMarkers(
-        radius = joined$deaths + 1,
+    m <-leaflet(joined) %>% addTiles() %>% addCircleMarkers(
+        radius = ~ifelse(type == "well", 4, joined$deaths + 1),
         color = ~pal(type),
         stroke = FALSE,
-        fillOpacity = 0.5,
-        label = paste("Deaths:", joined$deaths)
+        fillOpacity = ~ifelse(type == "well", 1, .5),
+        label = ~ifelse(type == "death",paste("Deaths:", joined$deaths) , "Well")
         ) 
+    # use the black/white map so it doesn't colide with the data we are displaying 
     m = addProviderTiles(map = m, provider = "CartoDB.Positron")
     m
   })
