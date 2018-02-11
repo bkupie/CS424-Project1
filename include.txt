@@ -26,3 +26,7 @@ Data used:
 
 Author:
     Bartosz Kupiec (Website: bkupie.github.io )
+
+Source code:
+    The source code is available to the public via github.
+    https://github.com/bkupie/CS424-Project1

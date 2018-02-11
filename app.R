@@ -197,19 +197,25 @@ server <- function(input, output) {
   
   
   output$bar0 <- renderPlot({
-    ggplot(census, aes(x ="",male,fill = age)) +
-      geom_bar(width = 3, stat="identity")  +
-      coord_polar("y", start=0) +
+    
+    df <- data.frame(
+      group = census$age,
+      value = round(census$male/sum(census$male)*100)
+    )
+    
+    ggplot(df, aes(x ="",value,fill = group)) +
+      geom_bar(width = 4, stat="identity")  +
+      geom_text(aes(x = 3.5,label = percent(value/100)), size=3.5, position = position_stack(vjust = 0.5)) +
+      coord_polar("y") +
       scale_fill_brewer(palette="Dark2") +
-      theme(axis.text.x = element_text(angle = 0, hjust = 0)) +
-    theme_minimal() +
+      theme(axis.text.x =element_blank()) +
+      theme_minimal() +
       theme(
         axis.title.x = element_blank(),
         axis.title.y = element_blank(),
         panel.border = element_blank(),
         panel.grid=element_blank(),
-        axis.ticks = element_blank(),
-        plot.title=element_text(size=14, face="bold")
+        axis.ticks = element_blank()
       )
   })
   
@@ -243,28 +249,32 @@ server <- function(input, output) {
   
   
   output$bar1 <- renderPlot({
-    ggplot(census, aes(x ="",female,fill = age)) +
-      geom_bar(width = 1, stat="identity")  +
-      coord_polar("y", start=0) +
+    
+    df <- data.frame(
+      group = census$age,
+      value = round(census$female/sum(census$female)*100)
+    )
+    
+    ggplot(df, aes(x ="",value,fill = group)) +
+      geom_bar(width = 4, stat="identity")  +
+      geom_text(aes(x = 3.5,label = percent(value/100)), size=3.5, position = position_stack(vjust = 0.5)) +
+      coord_polar("y") +
       scale_fill_brewer(palette="Dark2") +
-      theme(axis.text.x = element_text(angle = 0, hjust = 0)) +
+      theme(axis.text.x =element_blank()) +
       theme_minimal() +
       theme(
         axis.title.x = element_blank(),
         axis.title.y = element_blank(),
         panel.border = element_blank(),
         panel.grid=element_blank(),
-        axis.ticks = element_blank(),
-        plot.title=element_text(size=14, face="bold")
+        axis.ticks = element_blank()
       )
   })
   
   output$bar2 <- renderPlot({
- 
-    combinedDeaths <- melt(census, id = "age")
-    
-    totalMale <- cumsum(census$male)
-    totalFemale <- cumsum(census$female)
+
+    totalMale <- sum(census$male)
+    totalFemale <- sum(census$female)
     
     myDF <- data.frame(
       group = c("Male", "Female"),
@@ -275,6 +285,7 @@ server <- function(input, output) {
       geom_bar(width = 1, stat="identity")  +
       coord_polar("y", start=0) +
       scale_fill_brewer(palette="Dark2") +
+      geom_text(aes(label = percent((value/(totalMale+totalFemale)))), size=10, position = position_stack(vjust = 0.5)) +
       theme(axis.text.x = element_text(angle = 0, hjust = 0)) +
       theme_minimal() +
       theme(
@@ -287,6 +298,8 @@ server <- function(input, output) {
       )
       
   })
+  
+  
   
   # add a leaflet map and put markers where the deaths occured
 
