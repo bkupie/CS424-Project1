@@ -61,7 +61,6 @@ ui <- dashboardPage(
   #start of the body 
   dashboardBody(
     tags$style(type = "text/css", "#map {height: calc(100vh - 240px) !important;}"),
-    actionButton("show",icon("info-sign", lib = "glyphicon")),
     tabsetPanel( 
       tabPanel("Deaths and attacks",
         
@@ -76,11 +75,11 @@ ui <- dashboardPage(
       tabPanel("Age/Sex", 
                
       fluidRow(
-        box(title = "Males vs Females deaths (Thousands)", solidHeader = TRUE, status = "primary", width = 4,
+        box(title = "Males vs Females fatalities (Thousands)", solidHeader = TRUE, status = "primary", width = 4,
             dataTableOutput("tab2")),
-        box( title = "Male deaths (Thousands)", solidHeader = TRUE, status = "primary",width = 3,
+        box( title = "Male fatalities (Thousands)", solidHeader = TRUE, status = "primary",width = 3,
              plotOutput("hist0")),
-        box( title = "Female deaths (Thousands)", solidHeader = TRUE, status = "primary",width = 3,
+        box( title = "Female fatalities (Thousands)", solidHeader = TRUE, status = "primary",width = 3,
              plotOutput("hist1"))
       )),
       tabPanel("Census data",
@@ -105,7 +104,13 @@ ui <- dashboardPage(
       tabPanel("Death/pumps locations", 
       box(title = "Map", solidHeader = TRUE, status = "primary", width = 12,
           leafletOutput("map")
-      ))
+      )),
+      tabPanel("About " , icon = icon("info-sign", lib = "glyphicon"),
+               
+               column(11,
+                      pre(includeText("include.txt"))
+               )
+               )
       
     )
   )
@@ -297,6 +302,7 @@ server <- function(input, output) {
         ) 
     # use the black/white map so it doesn't colide with the data we are displaying 
     m = addProviderTiles(map = m, provider = "CartoDB.Positron")
+    m <- setView(m, lng = -0.136668,lat = 51.513341 , zoom = 16)
     m
   })
   

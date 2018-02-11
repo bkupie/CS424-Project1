@@ -1,0 +1,28 @@
+Info:
+    This project was made for Visualization and Visual Analytics (CS424) course 
+    at the University of Illinois at Chicago (UIC) by Bartosz Kupiec.
+    The goal of this project was to create an interactive web-based application that 
+    visualizes data about  in multiple ways 1854 London cholera outbreak. mainly 
+    using R and Shiny and ggplot2 and Shiny Dashboard. 
+
+Libraries used:
+    shiny
+    shinydashboard
+    ggplot2
+    lubridate
+    DT
+    jpeg
+    grid
+    leaflet
+    reshape2
+    scales
+    dplyr
+
+
+
+Data used:
+    The visualization uses a variety of datasets that were created and compiled
+    by Robin Wilson (robin@rtwilson.com, www.rtwilson.com/academic) - Jan 2011
+
+Author:
+    Bartosz Kupiec (Website: bkupie.github.io )
