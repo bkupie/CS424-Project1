@@ -20,36 +20,40 @@ census <- read.table(file = "data/UKcensus1851.csv", header = TRUE,sep = ',')
 deathLocations <- read.table(file = "data/choleraDeathLocations.csv", header = FALSE,sep = ',')
 pumpLocations <- read.table(file = "data/choleraPumpLocations.csv", header = FALSE,sep = ',')
 
+#we will now make sure we have all the data we need to make the visualizations#
+
+#make sure death information is filled completly and correct for the first Deaths and Attacks tab
+  complete.cases(deaths) 
+  deaths[complete.cases(deaths), ]
+  deaths <- deaths[complete.cases(deaths), ]
+  paste(deaths$Attack + deaths$Death)
+
+  #make sure input is seen as integer values 
+  deaths$Attack <- as.integer(deaths$Attack)
+  deaths$Death <- as.integer(deaths$Death)
+
+  #create a new field in the table for the totals 
+  deaths$TotalDeaths <- cumsum(deaths$Death)
+  deaths$TotalAttacks <- cumsum(deaths$Attack)
+
+  #format the date field properly 
+  deaths$Date <- as.Date(deaths$Date, format = "%d-%b-%Y")
+  deaths$Date <- format(as.Date(deaths$Date), format = "%m-%d-%Y")
+
+  
 #add totals for the census data
-census$Total = census$female + census$male
-
-
-#make sure death information is filled completly and correctl
-complete.cases(deaths) 
-deaths[complete.cases(deaths), ]
-deaths <- deaths[complete.cases(deaths), ]
-paste(deaths$Attack + deaths$Death)
-
-#make sure input is seen as integer values 
-deaths$Attack <- as.integer(deaths$Attack)
-deaths$Death <- as.integer(deaths$Death)
-
-#create a new field in the table for the totals 
-deaths$TotalDeaths <- cumsum(deaths$Death)
-deaths$TotalAttacks <- cumsum(deaths$Attack)
-
-#format the date field properly 
-deaths$Date <- as.Date(deaths$Date, format = "%d-%b-%Y")
-deaths$Date <- format(as.Date(deaths$Date), format = "%m-%d-%Y")
-
-#format the death locations as long/lat, and add new collumn 
-deathLocations$type = "death"
-pumpLocations$type = "well"
-
-colnames(deathLocations) <- c("deaths", "longitude","latitude","type" )
-colnames(pumpLocations) <- c("deaths", "longitude","latitude","type" )
-
-joined <- rbind(deathLocations,pumpLocations)
+  census$Total = census$female + census$male
+  
+  
+#format the death locations as long/lat, and add new collumn to keep track of the data
+# is coming from the well file or the death file 
+  deathLocations$type = "death"
+  pumpLocations$type = "well"
+  #rename the collumns to have the same names, and make sure it says long/lat for leafy map
+  colnames(deathLocations) <- c("deaths", "longitude","latitude","type" )
+  colnames(pumpLocations) <- c("deaths", "longitude","latitude","type" )
+  # combine the two data files into one so it's easier for the program to parse it 
+  joined <- rbind(deathLocations,pumpLocations)
 
 # start up the gui 
 ui <- dashboardPage(
@@ -60,42 +64,44 @@ ui <- dashboardPage(
   
   #start of the body 
   dashboardBody(
+    #give style for the map
     tags$style(type = "text/css", "#map {height: calc(100vh - 240px) !important;}"),
     tabsetPanel( 
+      #first tab
       tabPanel("Deaths and attacks",
-        
         fluidRow(
         box( title = "Deaths in 1854 from the London cholera outbreak", solidHeader = TRUE, status = "primary", width = 10,
-             plotOutput("graph0"))
+             plotOutput("tab1barchart"))
       ),
       box(title = "Deaths and Attacks ", solidHeader = TRUE, status = "primary", width = 10,
-          dataTableOutput("tab1")
+          dataTableOutput("tab1table")
         )
       ),
+      #second tab
       tabPanel("Age/Sex", 
                
       fluidRow(
         box(title = "Males vs Females fatalities (Thousands)", solidHeader = TRUE, status = "primary", width = 4,
-            dataTableOutput("tab2")),
+            dataTableOutput("tab2table")),
         box( title = "Male fatalities (Thousands)", solidHeader = TRUE, status = "primary",width = 3,
-             plotOutput("hist0")),
+             plotOutput("tab2histogram0")),
         box( title = "Female fatalities (Thousands)", solidHeader = TRUE, status = "primary",width = 3,
-             plotOutput("hist1"))
+             plotOutput("tab2histogram1"))
       )),
       tabPanel("Census data",
                fluidRow(
                  box(title = "Census data (United Kingdom 1851) ", solidHeader = TRUE, status = "primary",width = 3,
-                     dataTableOutput("tab3")),
+                     dataTableOutput("tab3table")),
                  box( title = "Males", solidHeader = TRUE, status = "primary", width = 4,
                       plotOutput("censusBar0")),
                  box( title = "Females", solidHeader = TRUE, status = "primary",width = 4,
                       plotOutput("censusBar1")),
                  box( title = "Males", solidHeader = TRUE, status = "primary", width = 3,
-                      plotOutput("bar0")),
+                      plotOutput("piechart0")),
                  box( title = "Females", solidHeader = TRUE, status = "primary",width = 3,
-                      plotOutput("bar1")),
+                      plotOutput("piechart1")),
                  box( title = "Males vs Females", solidHeader = TRUE, status = "primary", width = 3,
-                      plotOutput("bar2"))
+                      plotOutput("piechart2"))
                )  
                
                
@@ -122,20 +128,20 @@ server <- function(input, output) {
   theme_set(theme_dark(base_size = 18))
   
   # use DT to help out with the tables - https://datatables.net/reference/option/
-  output$tab1 <- DT::renderDataTable(
+  output$tab1table <- DT::renderDataTable(
     DT::datatable({ 
+      # copy the data to ensure it doesn't change 
       deathsTable <-  deaths
     }, 
     class = 'cell-border stripe',
     rownames = FALSE,
     options = list(searching = FALSE, pageLength = 8, lengthChange = FALSE, order = list(list(0, 'asc'))
-                   
-                   ) 
+     ) 
     )
   )
 
   
-  output$tab2 <- DT::renderDataTable(
+  output$tab2table <- DT::renderDataTable(
     DT::datatable({ 
       ageAndSexTable <-  ageAndSex
       }, 
@@ -147,7 +153,7 @@ server <- function(input, output) {
     )
   )
   
-  output$tab3 <- DT::renderDataTable(
+  output$tab3table <- DT::renderDataTable(
     DT::datatable(census, 
                   options = list(searching = FALSE,dom = 't',pageLength = 9, lengthChange = FALSE,
                                  columnDefs = list(list(className = 'dt-left', 
@@ -157,9 +163,10 @@ server <- function(input, output) {
   
   
 #graph outputs 
-  output$graph0 <- renderPlot({
+  output$tab1barchart <- renderPlot({
+    #combine the data by date 
     my_data <- melt(deaths, id ="Date")
-    
+    #plot the bar chart, with each col's color being dependent on the variable 
     ggplot(my_data, aes(Date, value,colour = variable,group=variable)) +
       geom_line() +   
       geom_point(size = 1) +
@@ -167,7 +174,8 @@ server <- function(input, output) {
       theme(axis.text.x = element_text(angle = 90, hjust = 0)) 
  })
   
-  output$hist0 <- renderPlot({
+  # output the two histograms/bar graphs for the second tab. 
+  output$tab2histogram0 <- renderPlot({
     ggplot(ageAndSex, aes(age,male)) +
       geom_text(
         aes(label = male),
@@ -181,7 +189,7 @@ server <- function(input, output) {
       xlab("Age group")
   })
   
-  output$hist1 <- renderPlot({
+  output$tab2histogram1 <- renderPlot({
     ggplot(ageAndSex, aes(age,female)) +
       geom_text(
         aes(label = female),
@@ -195,30 +203,7 @@ server <- function(input, output) {
       xlab("Age group")
   })
   
-  
-  output$bar0 <- renderPlot({
-    
-    df <- data.frame(
-      group = census$age,
-      value = round(census$male/sum(census$male)*100)
-    )
-    
-    ggplot(df, aes(x ="",value,fill = group)) +
-      geom_bar(width = 4, stat="identity")  +
-      geom_text(aes(x = 3.5,label = percent(value/100)), size=3.5, position = position_stack(vjust = 0.5)) +
-      coord_polar("y") +
-      scale_fill_brewer(palette="Dark2") +
-      theme(axis.text.x =element_blank()) +
-      theme_minimal() +
-      theme(
-        axis.title.x = element_blank(),
-        axis.title.y = element_blank(),
-        panel.border = element_blank(),
-        panel.grid=element_blank(),
-        axis.ticks = element_blank()
-      )
-  })
-  
+
   output$censusBar0 <- renderPlot({
     ggplot(census, aes(age,male)) +
       geom_text(
@@ -247,8 +232,32 @@ server <- function(input, output) {
       xlab("Age group")
   })
   
+  # create the different pie charts for the census data 
+  output$piechart0 <- renderPlot({
+    df <- data.frame(
+      group = census$age,
+      # calculate value as the percentage sum 
+      value = round(census$male/sum(census$male)*100)
+    )
+    
+    ggplot(df, aes(x ="",value,fill = group)) +
+      geom_bar(width = 4, stat="identity")  +
+      geom_text(aes(x = 3.5,label = percent(value/100)), size=3.5, position = position_stack(vjust = 0.5)) +
+      coord_polar("y") +
+      scale_fill_brewer(palette="Dark2") +
+      theme(axis.text.x =element_blank()) +
+      theme_minimal() +
+      theme(
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        panel.border = element_blank(),
+        panel.grid=element_blank(),
+        axis.ticks = element_blank()
+      )
+  })
   
-  output$bar1 <- renderPlot({
+  
+  output$piechart1 <- renderPlot({
     
     df <- data.frame(
       group = census$age,
@@ -271,7 +280,7 @@ server <- function(input, output) {
       )
   })
   
-  output$bar2 <- renderPlot({
+  output$piechart2 <- renderPlot({
 
     totalMale <- sum(census$male)
     totalFemale <- sum(census$female)
@@ -304,6 +313,7 @@ server <- function(input, output) {
   # add a leaflet map and put markers where the deaths occured
 
   output$map <- renderLeaflet({
+    #red is for the deaths, while blue is for the wells 
     pal <- colorFactor(c("red","blue"), domain = c("well","death"))
     
     m <-leaflet(joined) %>% addTiles() %>% addCircleMarkers(
@@ -315,20 +325,12 @@ server <- function(input, output) {
         ) 
     # use the black/white map so it doesn't colide with the data we are displaying 
     m = addProviderTiles(map = m, provider = "CartoDB.Positron")
+    #set starting position to one of the locations from the data file 
     m <- setView(m, lng = -0.136668,lat = 51.513341 , zoom = 16)
     m
   })
   
-  observeEvent(input$show, {
-    showModal(modalDialog(
-      title = "Information",
-      "Created by Bartosz Kupiec.",
-      easyClose = TRUE,
-      footer = NULL
-    ))
-  })
-  
 }
 
-
+#start the actual application 
 shinyApp(ui = ui, server = server)
